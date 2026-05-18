@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
+
 from utils.parser import LogParser
 
 app = FastAPI(
@@ -16,29 +17,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Logara AI API", "status": "active"}
+    return {
+        "message": "Welcome to Logara AI API",
+        "status": "active"
+    }
+
 
 @app.post("/ingest")
 async def ingest_logs(log_data: str = Body(..., embed=True)):
     """
     Accepts raw log strings and parses them into structured data.
-    In production, this would queue for vectorization.
     """
     if not log_data or not log_data.strip():
-        raise HTTPException(status_code=400, detail="Log message cannot be empty")
+        raise HTTPException(
+            status_code=400,
+            detail="Log message cannot be empty"
+        )
 
     parsed = LogParser.parse_line(log_data)
+
     if not parsed:
-         return {"status": "accepted_raw", "message": log_data}
-    
-    metadata = LogParser.extract_metadata(parsed["message"])
+        return {
+            "status": "accepted_raw",
+            "message": log_data
+        }
+
     return {
         "status": "success",
-        "parsed": parsed,
-        "metadata": metadata
+        "parsed": parsed
     }
+
 
 @app.get("/health")
 async def health_check():
