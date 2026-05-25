@@ -152,6 +152,35 @@ cp .env.example .env
    npm run dev
    ```
 
+## CI/CD Validation
+
+The repository now includes GitHub Actions validation for pull requests and deploy-readiness checks for the main branch.
+
+- `CI` runs on pull requests and manual dispatch.
+- `Pre-Deploy Validation` runs on pushes to `main` and manual dispatch.
+- Shared logic lives in `.github/workflows/repo-validation.yml` so CI and pre-deploy stay aligned.
+
+Current validation covers:
+
+- backend dependency install, import compilation, and `pytest`
+- frontend dependency install, `eslint`, and production build
+- repository deploy prerequisite checks via `.github/scripts/validate_deploy.py`
+- Docker Compose configuration validation with `docker compose config`
+- backend smoke checks that import the FastAPI app and worker successfully
+- changed-files-aware PR CI to avoid unnecessary jobs on smaller pull requests
+- backend coverage artifact generation in CI
+- Docker image build validation for backend and frontend images
+- live Redis/Qdrant integration smoke testing in CI
+- PR title lint, commit message lint, label automation, and auto-assignment workflows
+
+Repository governance also includes:
+
+- structured GitHub issue forms and an issue chooser
+- `CODEOWNERS` for automatic reviewer routing
+- Dependabot updates for GitHub Actions, backend Python packages, and frontend npm packages
+- a security audit workflow for GitHub Actions, Python dependencies, and production npm dependencies
+- a branch-protection setup guide in `.github/branch-protection.md`
+
 ## Contributing
 
 We welcome contributions that focus on performance optimizations in the log processing pipeline. Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for our technical standards.
