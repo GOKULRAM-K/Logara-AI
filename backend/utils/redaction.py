@@ -191,7 +191,7 @@ class Redactor:
                 return {
                     k: _sanitize(v)
                     for k, v in value.items()
-                }
+                    }
 
             if isinstance(value, list):
                 return [
