@@ -282,8 +282,10 @@ class IngestionService:
             )
 
         except Exception as exc:
-            print(f"[WARN] Redis unavailable, skipping queue: {str(exc)}")
-            return
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to queue log: {str(exc)}",
+            ) from exc
 
     @staticmethod
     def _normalize_level(level: str | None) -> str:
