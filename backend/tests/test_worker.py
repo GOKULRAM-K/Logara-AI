@@ -55,16 +55,22 @@ def test_process_log_valid_json(mock_get_model, mock_get_qdrant, caplog):
     assert "Successfully vectorized and indexed log to Qdrant" in caplog.text
 
     # Verify Qdrant upsert parameters
-    mock_q_client.upsert.assert_called_once()
-    kwargs = mock_q_client.upsert.call_args[1]
-    assert kwargs["collection_name"] == "logs"
-    points = kwargs["points"]
-    assert len(points) == 1
-    point = points[0]
-    assert point.payload["service_id"] == "auth-service"
-    assert point.payload["level"] == "ERROR"
-    assert point.payload["message"] == "Out of memory exception at address 0x1234"
-    assert point.vector == [0.1] * 384
+    assert mock_q_client.upsert.call_count == 2
+    first_call = mock_q_client.upsert.call_args_list[0].kwargs
+    second_call = mock_q_client.upsert.call_args_list[1].kwargs
+    assert first_call["collection_name"] == "log_clusters"
+    assert second_call["collection_name"] == "logs"
+
+    first_points = first_call["points"]
+    second_points = second_call["points"]
+    assert len(first_points) == 1
+    assert len(second_points) == 1
+
+    assert first_points[0].payload["service_name"] == "auth-service"
+    assert second_points[0].payload["service_id"] == "auth-service"
+    assert second_points[0].payload["level"] == "ERROR"
+    assert second_points[0].payload["message"] == "Out of memory exception at address 0x1234"
+    assert second_points[0].vector == [0.1] * 384
 
 
 def test_process_log_invalid_json(caplog):
@@ -189,3 +195,31 @@ def test_run_worker_single_iteration(mock_brpop, mock_process_log):
     mock_process_log.assert_called_once_with(
         '{"test": "data"}'
     )
+
+
+def test_init_qdrant_collection_creates_index():
+    from worker import init_qdrant_collection
+    mock_client = MagicMock()
+    
+    # Test case 1: Collection does not exist
+    mock_client.collection_exists.return_value = False
+    init_qdrant_collection(mock_client, "test_collection")
+    
+    mock_client.create_collection.assert_called_once()
+    mock_client.create_payload_index.assert_called_once_with(
+        collection_name="test_collection",
+        field_name="service_id",
+        field_schema="keyword"
+    )
+
+
+def test_init_qdrant_collection_already_exists():
+    from worker import init_qdrant_collection
+    mock_client = MagicMock()
+    
+    # Test case 2: Collection exists
+    mock_client.collection_exists.return_value = True
+    init_qdrant_collection(mock_client, "test_collection")
+    
+    mock_client.create_collection.assert_not_called()
+    mock_client.create_payload_index.assert_not_called()
